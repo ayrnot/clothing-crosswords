@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clothing Crossword</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+            background-image: radial-gradient(circle at top right, #e0e7ff, transparent 40%),
+                radial-gradient(circle at bottom left, #f3e8ff, transparent 40%);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.5);
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+
+        .cell-active {
+            transform: scale(1.1);
+            z-index: 20;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 6px;
+        }
+
+        .pop-in {
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .crossword-grid {
+            background-color: #1e293b;
+            border: 6px solid #1e293b;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 sm:p-8 text-slate-900 flex flex-col items-center">
+
+    <!-- Success Message Overlay (Hidden by default) -->
+    <div id="success-message"
+        class="hidden fixed top-6 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-8 py-4 rounded-full shadow-2xl z-50 flex items-center gap-3 pop-in">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span class="font-bold text-lg tracking-wide">Puzzle Solved Successfully!</span>
+    </div>
+
+    <div
+        class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-5 gap-8 bg-white/80 backdrop-blur-xl p-6 sm:p-10 rounded-[2rem] shadow-2xl border border-white/50">
+
+        <!-- Left: Puzzle Grid -->
+        <div class="lg:col-span-3 flex flex-col items-center">
+            <header class="mb-8 text-center">
+                <h1
+                    class="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 tracking-tight pb-2">
+                    Style Crossword</h1>
+                <p class="text-slate-500 font-medium mt-1 bg-slate-100 inline-block px-4 py-1.5 rounded-full text-sm">
+                    Tap squares to type, click again to swap direction</p>
+            </header>
+
+            <div id="grid-container" class="grid gap-[1px] crossword-grid outline-none transition-all duration-300"
+                tabindex="0">
+                <!-- Grid Cells injected here -->
+            </div>
+
+            <div class="mt-10 flex flex-wrap gap-4 justify-center w-full max-w-md">
+                <button id="btn-check"
+                    class="flex-1 flex justify-center items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl hover:from-indigo-700 hover:to-indigo-800 active:scale-95 transition-all shadow-lg hover:shadow-indigo-500/30 font-bold text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Check
+                </button>
+                <button id="btn-hint"
+                    class="flex-1 flex justify-center items-center gap-2 px-6 py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 text-white rounded-2xl hover:from-amber-500 hover:to-amber-600 active:scale-95 transition-all shadow-lg hover:shadow-amber-500/30 font-bold text-lg text-shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5">
+                        </path>
+                        <path d="M9 18h6"></path>
+                        <path d="M10 22h4"></path>
+                    </svg>
+                    Hint
+                </button>
+                <button id="btn-reset"
+                    class="flex justify-center items-center gap-2 px-6 py-3.5 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 active:scale-95 transition-all font-bold text-lg border-2 border-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right: Clues Panel -->
+        <div class="lg:col-span-2 flex flex-col gap-6 overflow-y-auto max-h-[80vh] pr-2 custom-scrollbar">
+
+            <section class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <h2
+                    class="text-xl font-black text-slate-800 pb-3 mb-4 uppercase tracking-widest flex items-center gap-3 border-b-2 border-slate-100">
+                    <span class="w-3 h-8 bg-gradient-to-b from-indigo-400 to-indigo-600 rounded-full shadow-sm"></span>
+                    Across
+                </h2>
+                <div id="clues-across" class="space-y-3"></div>
+            </section>
+
+            <section class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <h2
+                    class="text-xl font-black text-slate-800 pb-3 mb-4 uppercase tracking-widest flex items-center gap-3 border-b-2 border-slate-100">
+                    <span class="w-3 h-8 bg-gradient-to-b from-purple-400 to-purple-600 rounded-full shadow-sm"></span>
+                    Down
+                </h2>
+                <div id="clues-down" class="space-y-3"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const GRID_SIZE = 13;
+        const VALID_WORDS = [
+            { word: 'BLOUSE', r: 0, c: 10, dir: 'down', clue: 'A loose-fitting shirt, typically worn by women.' },
+            { word: 'GOGGLES', r: 4, c: 6, dir: 'down', clue: 'Protective eyewear used for swimming or skiing.' },
+            { word: 'HOODIE', r: 5, c: 5, dir: 'across', clue: 'A sweatshirt with a covering for the head.' },
+            { word: 'MITTENS', r: 6, c: 1, dir: 'down', clue: "Winter handwear that doesn't have individual finger slots." },
+            { word: 'BLAZER', r: 7, c: 3, dir: 'down', clue: 'A smart-casual jacket often worn with a shirt or dress.' },
+            { word: 'TRAINERS', r: 9, c: 1, dir: 'across', clue: 'Casual athletic shoes often worn for running or gym.' }
+        ];
+
+        let userInputs = {};
+        let selectedCell = { r: 0, c: 10 };
+        let status = 'playing';
+        let direction = 'across';
+        let grid = [];
+
+        // Initialization
+        function initGrid() {
+            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(null));
+            VALID_WORDS.forEach((w, idx) => {
+                for (let i = 0; i < w.word.length; i++) {
+                    const r = w.dir === 'across' ? w.r : w.r + i;
+                    const c = w.dir === 'across' ? w.c + i : w.c;
+                    if (r < GRID_SIZE && c < GRID_SIZE) {
+                        if (!grid[r][c]) {
+                            grid[r][c] = { char: w.word[i], num: i === 0 ? idx + 1 : null, words: [idx] };
+                        } else {
+                            if (i === 0) grid[r][c].num = idx + 1;
+                            grid[r][c].words.push(idx);
+                        }
+                    }
+                }
+            });
+        }
+
+        function render() {
+            const container = document.getElementById('grid-container');
+            container.style.gridTemplateColumns = `repeat(${GRID_SIZE}, minmax(0, 1fr))`;
+            container.innerHTML = '';
+
+            let allFilledAndCorrect = true;
+            let totalWordCells = 0;
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cellData = grid[r][c];
+                    const cellEl = document.createElement('div');
+
+                    if (!cellData) {
+                        // Empty dark cell
+                        cellEl.className = "w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-slate-800/50";
+                    } else {
+                        totalWordCells++;
+                        const inputKey = `${r}-${c}`;
+                        const userInput = userInputs[inputKey] || '';
+
+                        // Check if correct for win state tracking
+                        if (userInput !== cellData.char) {
+                            allFilledAndCorrect = false;
+                        }
+
+                        // Styling Logic for active/highlighted words
+                        let classes = "relative w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center font-bold text-lg sm:text-2xl transition-all duration-200 cursor-pointer select-none ";
+
+                        const selectedCellData = grid[selectedCell.r]?.[selectedCell.c];
+                        const activeWordIdxs = selectedCellData?.words || [];
+                        const isPartOfActiveWord = cellData.words.some(idx =>
+                            activeWordIdxs.includes(idx) && VALID_WORDS[idx].dir === direction
+                        );
+
+                        if (selectedCell.r === r && selectedCell.c === c) {
+                            classes += "bg-yellow-300 text-yellow-900 cell-active ";
+                        } else if (isPartOfActiveWord) {
+                            classes += "bg-indigo-100 text-indigo-900 ";
+                        } else {
+                            classes += "bg-white text-slate-800 hover:bg-slate-50 ";
+                        }
+
+                        // Validation styling
+                        if (status === 'checked' && userInput) {
+                            if (userInput === cellData.char) {
+                                classes = classes.replace('text-slate-800', '').replace('text-indigo-900', '') + " text-green-600 bg-green-50 font-black ";
+                            } else {
+                                classes = classes.replace('text-slate-800', '').replace('text-indigo-900', '') + " text-red-500 bg-red-100 ";
+                            }
+                        }
+
+                        cellEl.className = classes;
+                        cellEl.onclick = () => handleCellClick(r, c);
+
+                        // Letter number (top left)
+                        if (cellData.num) {
+                            const numSpan = document.createElement('span');
+                            numSpan.className = "absolute top-0.5 left-1 text-[10px] font-bold text-slate-500 pointer-events-none";
+                            numSpan.textContent = cellData.num;
+                            cellEl.appendChild(numSpan);
+                        }
+
+                        // Input letter
+                        const letterSpan = document.createElement('span');
+                        letterSpan.className = "uppercase pointer-events-none mt-1 " + (userInput ? "pop-in" : "");
+                        letterSpan.textContent = userInput;
+                        cellEl.appendChild(letterSpan);
+                    }
+                    container.appendChild(cellEl);
+                }
+            }
+
+            renderClues();
+
+            // Handle success message visibility
+            const successMsg = document.getElementById('success-message');
+            if (status === 'checked' && allFilledAndCorrect && totalWordCells > 0) {
+                successMsg.classList.remove('hidden');
+            } else {
+                successMsg.classList.add('hidden');
+            }
+        }
+
+        function renderClues() {
+            const acrossContainer = document.getElementById('clues-across');
+            const downContainer = document.getElementById('clues-down');
+            acrossContainer.innerHTML = '';
+            downContainer.innerHTML = '';
+
+            VALID_WORDS.forEach((w, idx) => {
+                const isActive = (grid[selectedCell.r]?.[selectedCell.c]?.words || []).includes(idx) && direction === w.dir;
+
+                const clueEl = document.createElement('div');
+                clueEl.className = `p-4 rounded-2xl cursor-pointer transition-all border-2 ${isActive
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg transform scale-[1.02]'
+                    : 'bg-slate-50 border-transparent hover:border-indigo-200 text-slate-600 hover:bg-white'
+                    }`;
+
+                clueEl.onclick = () => {
+                    selectedCell = { r: w.r, c: w.c };
+                    direction = w.dir;
+                    render();
+                };
+
+                clueEl.innerHTML = `
+                    <div class="flex gap-4 items-start">
+                        <span class="font-black text-xl mt-0.5 ${isActive ? 'text-indigo-200' : 'text-indigo-400'}">${idx + 1}.</span>
+                        <p class="text-[15px] font-medium leading-relaxed">${w.clue}</p>
+                    </div>
+                `;
+
+                if (w.dir === 'across') acrossContainer.appendChild(clueEl);
+                else downContainer.appendChild(clueEl);
+            });
+        }
+
+        function handleCellClick(r, c) {
+            status = 'playing'; // Reset check status on interaction
+            if (selectedCell.r === r && selectedCell.c === c) {
+                // Swap direction if clicking the same active cell
+                direction = direction === 'across' ? 'down' : 'across';
+            } else {
+                selectedCell = { r, c };
+
+                // Auto-set direction if the cell only belongs to one word direction
+                const cellWords = grid[r][c]?.words || [];
+                if (cellWords.length > 0) {
+                    const firstWordDir = VALID_WORDS[cellWords[0]].dir;
+                    // If it only has 1 word, force that direction
+                    if (cellWords.length === 1) {
+                        direction = firstWordDir;
+                    }
+                    // If it has multiple, keep current direction if valid, otherwise swap
+                    else {
+                        const hasCurrentDir = cellWords.some(idx => VALID_WORDS[idx].dir === direction);
+                        if (!hasCurrentDir) {
+                            direction = direction === 'across' ? 'down' : 'across';
+                        }
+                    }
+                }
+            }
+            render();
+        }
+
+        function moveFocus(step) {
+            const dr = direction === 'across' ? 0 : step;
+            const dc = direction === 'across' ? step : 0;
+            const nr = selectedCell.r + dr;
+            const nc = selectedCell.c + dc;
+
+            if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && grid[nr]?.[nc]) {
+                selectedCell = { r: nr, c: nc };
+            }
+        }
+
+        // Global Event Listeners
+        document.getElementById('grid-container').addEventListener('keydown', (e) => {
+            if (status === 'checked') status = 'playing';
+
+            if (e.key === 'Backspace') {
+                const key = `${selectedCell.r}-${selectedCell.c}`;
+                // If there's a letter, delete it. If empty, move back and delete.
+                if (userInputs[key]) {
+                    userInputs[key] = '';
+                } else {
+                    moveFocus(-1);
+                    const newKey = `${selectedCell.r}-${selectedCell.c}`;
+                    userInputs[newKey] = '';
+                }
+                render();
+            } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                const key = `${selectedCell.r}-${selectedCell.c}`;
+                userInputs[key] = e.key.toUpperCase();
+                moveFocus(1);
+                render();
+            } else if (e.key.startsWith('Arrow')) {
+                const dirMap = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] };
+                const [dr, dc] = dirMap[e.key];
+                const nr = Math.max(0, Math.min(GRID_SIZE - 1, selectedCell.r + dr));
+                const nc = Math.max(0, Math.min(GRID_SIZE - 1, selectedCell.c + dc));
+                if (grid[nr]?.[nc]) {
+                    selectedCell = { r: nr, c: nc };
+                    render();
+                }
+                e.preventDefault();
+            }
+        });
+
+        // Button Actions
+        document.getElementById('btn-check').onclick = () => {
+            status = 'checked';
+            render();
+        };
+
+        document.getElementById('btn-reset').onclick = () => {
+            userInputs = {};
+            status = 'playing';
+            render();
+        };
+
+        document.getElementById('btn-hint').onclick = () => {
+            status = 'playing'; // Reset check view
+            const activeCellData = grid[selectedCell.r]?.[selectedCell.c];
+            let targetWord = null;
+
+            // 1. Determine the currently active word based on selection and direction
+            if (activeCellData && activeCellData.words.length > 0) {
+                const activeWordIdx = activeCellData.words.find(idx => VALID_WORDS[idx].dir === direction);
+                targetWord = activeWordIdx !== undefined ? VALID_WORDS[activeWordIdx] : VALID_WORDS[activeCellData.words[0]];
+            }
+
+            // 2. See if we can reveal the FIRST letter of the target word
+            let needsFallback = true;
+            if (targetWord) {
+                const firstLetterKey = `${targetWord.r}-${targetWord.c}`;
+                const correctFirstChar = grid[targetWord.r][targetWord.c].char;
+
+                if (userInputs[firstLetterKey] !== correctFirstChar) {
+                    userInputs[firstLetterKey] = correctFirstChar;
+                    needsFallback = false;
+
+                    // Focus the newly revealed cell
+                    selectedCell = { r: targetWord.r, c: targetWord.c };
+                    direction = targetWord.dir;
+                }
+            }
+
+            // 3. Fallback: If no word is selected OR the first letter is already revealed, reveal a random word's first letter
+            if (needsFallback) {
+                const unrevealedWords = VALID_WORDS.filter(w => {
+                    const key = `${w.r}-${w.c}`;
+                    return userInputs[key] !== grid[w.r][w.c].char;
+                });
+
+                if (unrevealedWords.length > 0) {
+                    const randomWord = unrevealedWords[Math.floor(Math.random() * unrevealedWords.length)];
+                    const key = `${randomWord.r}-${randomWord.c}`;
+                    userInputs[key] = grid[randomWord.r][randomWord.c].char;
+
+                    // Focus the newly revealed random hint
+                    selectedCell = { r: randomWord.r, c: randomWord.c };
+                    direction = randomWord.dir;
+                }
+            }
+
+            render();
+        };
+
+        // Initialize and focus container on load
+        initGrid();
+        render();
+        document.getElementById('grid-container').focus();
+    </script>
+</body>
+
+</html>
